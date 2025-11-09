@@ -3,7 +3,8 @@
  */
 const SHEET_ID = '1LDqX7WScxsP4LM6mzSjmcgX73i1ZPKVZOVjaQI1e9sU';
 const SHEET_NAME = 'Mail';
-const MANAGEMENT_LABEL = 'newsletter-manage';
+const MANAGEMENT_QUERY =
+  'is:unread (subject:"Sospendi Newsletter email" OR subject:"Riattiva Newsletter email" OR subject:"Cancella Newsletter email" OR subject:"Modifica frequenza Newsletter email")';
 
 const LOG_SHEET_ID = '16sJ4NTmvJqZo6P19wUR1tLg9AF80KKF0vU6UY631JHw';
 const LOG_SHEET_NAME = 'logml';
@@ -36,15 +37,10 @@ function processNewsletterManagementRequests() {
   let retryCount = 0;
 
   try {
-    const label = GmailApp.getUserLabelByName(MANAGEMENT_LABEL);
-    if (!label) {
-      Logger.log('L\'etichetta "' + MANAGEMENT_LABEL + '" non esiste: crea prima il filtro in Gmail.');
-      return;
-    }
-
-    const threads = label.getThreads();
+    const threads = fetchAllMatchingThreads(MANAGEMENT_QUERY);
     threads.forEach((thread) => {
       let threadHasErrors = false;
+      let processedMessages = false;
 
       thread.getMessages().forEach((message) => {
         if (!message.isUnread()) return;
@@ -52,6 +48,7 @@ function processNewsletterManagementRequests() {
         try {
           handleMessage(message);
           message.markRead();
+          processedMessages = true;
         } catch (err) {
           threadHasErrors = true;
           retryCount += 1;
@@ -75,8 +72,8 @@ function processNewsletterManagementRequests() {
         }
       });
 
-      if (!threadHasErrors) {
-        thread.removeLabel(label);
+      if (processedMessages && !threadHasErrors) {
+        thread.moveToArchive();
       }
     });
 
@@ -87,6 +84,32 @@ function processNewsletterManagementRequests() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Recupera tutti i thread che soddisfano la query Gmail indicata.
+ */
+function fetchAllMatchingThreads(query) {
+  const threads = [];
+  const batchSize = 100;
+  let start = 0;
+
+  while (true) {
+    const batch = GmailApp.search(query, start, batchSize);
+    if (!batch.length) {
+      break;
+    }
+
+    batch.forEach((thread) => threads.push(thread));
+
+    if (batch.length < batchSize) {
+      break;
+    }
+
+    start += batchSize;
+  }
+
+  return threads;
 }
 
 /**
