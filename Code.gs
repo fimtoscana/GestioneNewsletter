@@ -158,11 +158,24 @@ function handleMessage(message) {
       break;
     }
 
-    case 'changeFrequency':
+    case 'changeFrequency': {
+      const currentFrequency = (record.frequency || '').toString().trim();
+      const normalizedCurrent = currentFrequency.toLowerCase();
+      const normalizedRequested = request.newFrequency.toLowerCase();
+
+      if (normalizedCurrent === normalizedRequested && currentFrequency !== '') {
+        notifySuccess(
+          sender,
+          'La frequenza è già impostata su ' + request.newFrequency + '. Nessuna modifica necessaria.'
+        );
+        break;
+      }
+
       sheet.getRange(record.row, 3).setValue(request.newFrequency);
       logChange(request.email, record.status, request.newFrequency);
       notifySuccess(sender, 'Frequenza aggiornata a ' + request.newFrequency + '.');
       break;
+    }
 
     default:
       notifyError(sender, 'Richiesta non supportata.');
