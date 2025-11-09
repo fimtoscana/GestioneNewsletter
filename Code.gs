@@ -33,41 +33,8 @@ function processNewsletterManagementRequests() {
     return;
   }
 
-  const threads = label.getThreads();
   let retryCount = 0;
 
-  threads.forEach((thread) => {
-    let threadHasErrors = false;
-
-    thread.getMessages().forEach((message) => {
-      if (!message.isUnread()) return;
-
-      try {
-        handleMessage(message);
-        message.markRead();
-      } catch (err) {
-        threadHasErrors = true;
-        retryCount += 1;
-        const sender = extractEmailAddress(message.getFrom());
-        Logger.log(
-          `Errore nel processare il thread ${thread.getId()} "${message.getSubject()}": ${err.message}. retryPending=${retryCount}`
-        );
-        if (sender) {
-          notifyError(
-            sender,
-            'Si è verificato un problema nella gestione della tua richiesta. Il sistema ritenterà automaticamente.'
-          );
-        }
-      }
-    });
-
-    if (!threadHasErrors) {
-      thread.removeLabel(label);
-    }
-  });
-
-  if (retryCount > 0) {
-    Logger.log(`Messaggi che richiederanno un nuovo tentativo: ${retryCount}`);
   try {
     const label = GmailApp.getUserLabelByName(MANAGEMENT_LABEL);
     if (!label) {
@@ -77,18 +44,39 @@ function processNewsletterManagementRequests() {
 
     const threads = label.getThreads();
     threads.forEach((thread) => {
+      let threadHasErrors = false;
+
       thread.getMessages().forEach((message) => {
-        if (message.isUnread()) {
-          try {
-            handleMessage(message);
-          } catch (err) {
-            Logger.log(`Errore nel processare "${message.getSubject()}": ${err.message}`);
-          }
+        if (!message.isUnread()) return;
+
+        try {
+          handleMessage(message);
           message.markRead();
+        } catch (err) {
+          threadHasErrors = true;
+          retryCount += 1;
+          const sender = extractEmailAddress(message.getFrom());
+          Logger.log(
+            `Errore nel processare il thread ${thread.getId()} "${message.getSubject()}": ${err.message}. retryPending=${retryCount}`
+          );
+          if (sender) {
+            notifyError(
+              sender,
+              'Si è verificato un problema nella gestione della tua richiesta. Il sistema ritenterà automaticamente.'
+            );
+          }
         }
       });
-      thread.removeLabel(label);
+
+      if (!threadHasErrors) {
+        thread.removeLabel(label);
+      }
     });
+
+    if (retryCount > 0) {
+      Logger.log(`Messaggi che richiederanno un nuovo tentativo: ${retryCount}`);
+    }
+
   } finally {
     lock.releaseLock();
   }
