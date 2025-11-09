@@ -38,7 +38,7 @@ function processNewsletterManagementRequests() {
   try {
     const label = GmailApp.getUserLabelByName(MANAGEMENT_LABEL);
     if (!label) {
-      Logger.log(`L'etichetta "${MANAGEMENT_LABEL}" non esiste: crea prima il filtro in Gmail.`);
+      Logger.log('L\'etichetta "' + MANAGEMENT_LABEL + '" non esiste: crea prima il filtro in Gmail.');
       return;
     }
 
@@ -57,7 +57,14 @@ function processNewsletterManagementRequests() {
           retryCount += 1;
           const sender = extractEmailAddress(message.getFrom());
           Logger.log(
-            `Errore nel processare il thread ${thread.getId()} "${message.getSubject()}": ${err.message}. retryPending=${retryCount}`
+            'Errore nel processare il thread ' +
+              thread.getId() +
+              ' "' +
+              message.getSubject() +
+              '": ' +
+              err.message +
+              '. retryPending=' +
+              retryCount
           );
           if (sender) {
             notifyError(
@@ -74,7 +81,7 @@ function processNewsletterManagementRequests() {
     });
 
     if (retryCount > 0) {
-      Logger.log(`Messaggi che richiederanno un nuovo tentativo: ${retryCount}`);
+      Logger.log('Messaggi che richiederanno un nuovo tentativo: ' + retryCount);
     }
 
   } finally {
@@ -131,7 +138,7 @@ function handleMessage(message) {
     case 'changeFrequency':
       sheet.getRange(record.row, 3).setValue(request.newFrequency);
       logChange(request.email, record.status, request.newFrequency);
-      notifySuccess(sender, `Frequenza aggiornata a ${request.newFrequency}.`);
+      notifySuccess(sender, 'Frequenza aggiornata a ' + request.newFrequency + '.');
       break;
 
     default:
@@ -146,7 +153,7 @@ function getSheet(id, name) {
   const spreadsheet = SpreadsheetApp.openById(id);
   const sheet = spreadsheet.getSheetByName(name);
   if (!sheet) {
-    throw new Error(`Il foglio "${name}" non è stato trovato nel file ${id}.`);
+    throw new Error('Il foglio "' + name + '" non è stato trovato nel file ' + id + '.');
   }
   return sheet;
 }
@@ -231,7 +238,7 @@ function notifyError(recipient, message) {
   GmailApp.sendEmail(
     recipient,
     'Gestione Newsletter - errore',
-    `${message}\n\nSe il problema persiste, rispondi a questa email.`
+    message + '\n\nSe il problema persiste, rispondi a questa email.'
   );
 }
 
