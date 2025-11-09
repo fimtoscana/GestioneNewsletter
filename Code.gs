@@ -8,6 +8,9 @@ const MANAGEMENT_QUERY =
 
 const LOG_SHEET_ID = '16sJ4NTmvJqZo6P19wUR1tLg9AF80KKF0vU6UY631JHw';
 const LOG_SHEET_NAME = 'logml';
+const FEEDBACK_ALIAS = 'rassegna@fimtoscana.it';
+const FIM_LOGO_URL =
+  'https://ci3.googleusercontent.com/meips/ADKq_NYLN_GXFoAhBFQyQ4YoHUUcoSZV8ECPvMmqXcLLrdtJ5ATxyRV4Cc4L0rnzRSdjF8kVGSOdDCrfynnntiR1D78quNnReMeskQ0zS54bHahNVkzO-Tbv6zGz30ADuwFG3X_5ch_W3D9XasACyw=s0-d-e1-ft#https://www.fim-cisl.it/wp-content/uploads/2015/01/Anteprima-Logo-Fim-nazionale-FB.jpg';
 
 const STATUS = {
   ACTIVE: 'attivo',
@@ -247,11 +250,23 @@ function extractEmailAddress(from) {
  * Invia un’email di conferma al mittente.
  */
 function notifySuccess(recipient, message) {
-  GmailApp.sendEmail(
-    recipient,
-    'Gestione Newsletter - conferma',
-    message
-  );
+  const htmlBody =
+    '<div style="font-family:Arial,sans-serif;line-height:1.4;color:#333;">' +
+    '<div style="margin-bottom:16px;">' +
+    '<img src="' +
+    FIM_LOGO_URL +
+    '" alt="Logo FIM" style="max-width:220px;height:auto;" />' +
+    '</div>' +
+    '<p style="margin:0 0 12px 0;">' +
+    message +
+    '</p>' +
+    '<p style="margin:0;">Grazie per averci contattato.</p>' +
+    '</div>';
+
+  GmailApp.sendEmail(recipient, 'Gestione Newsletter - conferma', message, {
+    from: FEEDBACK_ALIAS,
+    htmlBody: htmlBody,
+  });
 }
 
 /**
