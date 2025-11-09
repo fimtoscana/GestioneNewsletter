@@ -27,26 +27,36 @@ const SUBJECT_TEMPLATES = {
  * Entry point richiamato da un trigger a tempo (es. ogni 5 minuti).
  */
 function processNewsletterManagementRequests() {
-  const label = GmailApp.getUserLabelByName(MANAGEMENT_LABEL);
-  if (!label) {
-    Logger.log(`L'etichetta "${MANAGEMENT_LABEL}" non esiste: crea prima il filtro in Gmail.`);
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    Logger.log('Impossibile ottenere il lock per la gestione delle richieste: uscita senza elaborazione.');
     return;
   }
 
-  const threads = label.getThreads();
-  threads.forEach((thread) => {
-    thread.getMessages().forEach((message) => {
-      if (message.isUnread()) {
-        try {
-          handleMessage(message);
-        } catch (err) {
-          Logger.log(`Errore nel processare "${message.getSubject()}": ${err.message}`);
+  try {
+    const label = GmailApp.getUserLabelByName(MANAGEMENT_LABEL);
+    if (!label) {
+      Logger.log(`L'etichetta "${MANAGEMENT_LABEL}" non esiste: crea prima il filtro in Gmail.`);
+      return;
+    }
+
+    const threads = label.getThreads();
+    threads.forEach((thread) => {
+      thread.getMessages().forEach((message) => {
+        if (message.isUnread()) {
+          try {
+            handleMessage(message);
+          } catch (err) {
+            Logger.log(`Errore nel processare "${message.getSubject()}": ${err.message}`);
+          }
+          message.markRead();
         }
-        message.markRead();
-      }
+      });
+      thread.removeLabel(label);
     });
-    thread.removeLabel(label);
-  });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /**
