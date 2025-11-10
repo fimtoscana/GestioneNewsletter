@@ -238,13 +238,16 @@ function parseRequest(subject) {
 
   match = SUBJECT_TEMPLATES.changeFrequency.exec(subject);
   if (match) {
-    const requested = match[3].trim();
-    if (!FREQUENCIES.includes(requested)) return null;
+    const requested = match[3].trim().toLowerCase();
+    const normalizedFrequencies = FREQUENCIES.map((frequency) => frequency.toLowerCase());
+    const frequencyIndex = normalizedFrequencies.findIndex((frequency) => frequency === requested);
+    if (frequencyIndex === -1) return null;
+    const canonicalFrequency = FREQUENCIES[frequencyIndex];
     return {
       action: 'changeFrequency',
       email: match[1].trim(),
       currentFrequency: match[2].trim(),
-      newFrequency: requested,
+      newFrequency: canonicalFrequency,
     };
   }
 
