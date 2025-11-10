@@ -7,12 +7,15 @@ Questo repository contiene lo script Google Apps Script utilizzato per gestire l
 
 ## Configurazione
 1. In Apps Script creare un trigger a tempo (es. ogni 5 minuti) che invochi `processNewsletterManagementRequests`.
-2. Verificare che i fogli `Mail` e `logml` esistano e abbiano rispettivamente le colonne `Mail | Status | Scheduling | Tipologia` e `Data | Mail | Status | Scheduling`.
+2. Verificare che i fogli `Mail` e `logml` esistano e abbiano rispettivamente le colonne `Mail | Status | Scheduling | Tipologia` e `Data | Mail | Azione | Status precedente | Status nuovo | Frequenza precedente | Frequenza nuova`.
 3. Accertarsi che i pulsanti inseriti nelle newsletter generino email con oggetto nel formato previsto (es. `Sospendi Newsletter email indirizzo@example.com`). Lo script cercherà automaticamente queste email non lette, le processerà, le segnerà come lette e archivierà i thread gestiti correttamente.
 
 ## Log delle operazioni
-Ogni modifica va a registrare una riga nel foglio `logml` con:
-- **Data**: timestamp dell’operazione
-- **Mail**: indirizzo dell’iscritto coinvolto
-- **Status**: valore aggiornato dopo l’operazione (`attivo`, `sospeso` o `cancellato`)
-- **Scheduling**: frequenza attuale (`Giornaliero`, `Settimanale` o vuoto se non applicabile)
+Ogni evento genera una riga nel foglio `logml` con i seguenti campi:
+- **Data**: timestamp dell’operazione.
+- **Mail**: indirizzo dell’iscritto coinvolto.
+- **Azione**: tipo di richiesta gestita (`suspend`, `resume`, `cancel`, `changeFrequency`).
+- **Status precedente**: stato registrato prima dell’elaborazione (`attivo`, `sospeso`, `cancellato` o vuoto).
+- **Status nuovo**: stato risultante dopo l’operazione.
+- **Frequenza precedente**: frequenza pianificata prima della richiesta (`Giornaliero`, `Settimanale` o vuoto).
+- **Frequenza nuova**: frequenza impostata dopo la gestione (vuota quando non applicabile o dopo una cancellazione).
