@@ -303,8 +303,8 @@ function extractEmailAddress(from) {
 /**
  * Invia un’email di conferma al mittente.
  */
-function notifySuccess(recipient, message) {
-  const htmlBody =
+function buildFeedbackHtml(primaryMessage, secondaryMessage) {
+  let html =
     '<div style="font-family:Arial,sans-serif;line-height:1.4;color:#333;">' +
     '<div style="margin-bottom:16px;">' +
     '<img src="' +
@@ -312,10 +312,19 @@ function notifySuccess(recipient, message) {
     '" alt="Logo FIM" style="max-width:220px;height:auto;" />' +
     '</div>' +
     '<p style="margin:0 0 12px 0;">' +
-    message +
-    '</p>' +
-    '<p style="margin:0;">Grazie per averci contattato.</p>' +
-    '</div>';
+    primaryMessage +
+    '</p>';
+
+  if (secondaryMessage) {
+    html += '<p style="margin:0;">' + secondaryMessage + '</p>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function notifySuccess(recipient, message) {
+  const htmlBody = buildFeedbackHtml(message, 'Grazie per averci contattato.');
 
   GmailApp.sendEmail(recipient, 'Gestione Newsletter - conferma', message, {
     from: FEEDBACK_ALIAS,
@@ -327,11 +336,13 @@ function notifySuccess(recipient, message) {
  * Invia un’email di errore al mittente.
  */
 function notifyError(recipient, message) {
-  GmailApp.sendEmail(
-    recipient,
-    'Gestione Newsletter - errore',
-    message + '\n\nSe il problema persiste, rispondi a questa email.'
-  );
+  const fallbackMessage = message + '\n\nSe il problema persiste, rispondi a questa email.';
+  const htmlBody = buildFeedbackHtml(message, 'Se il problema persiste, rispondi a questa email.');
+
+  GmailApp.sendEmail(recipient, 'Gestione Newsletter - errore', fallbackMessage, {
+    from: FEEDBACK_ALIAS,
+    htmlBody: htmlBody,
+  });
 }
 
 /**
