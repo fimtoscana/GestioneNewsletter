@@ -140,23 +140,46 @@ function handleMessage(message) {
     return;
   }
 
+  const previousStatus = record.status;
+  const previousFrequency = record.frequency;
+
   switch (request.action) {
     case 'suspend':
       sheet.getRange(record.row, 2).setValue(STATUS.SUSPENDED);
-      logChange(request.email, STATUS.SUSPENDED, record.frequency);
+      logChange(
+        request.email,
+        'suspend',
+        previousStatus,
+        STATUS.SUSPENDED,
+        previousFrequency,
+        previousFrequency
+      );
       notifySuccess(sender, 'Invio sospeso correttamente.');
       break;
 
     case 'resume':
       sheet.getRange(record.row, 2).setValue(STATUS.ACTIVE);
-      logChange(request.email, STATUS.ACTIVE, record.frequency);
+      logChange(
+        request.email,
+        'resume',
+        previousStatus,
+        STATUS.ACTIVE,
+        previousFrequency,
+        previousFrequency
+      );
       notifySuccess(sender, 'Invio riattivato correttamente.');
       break;
 
     case 'cancel': {
-      const currentFrequency = record.frequency;
       sheet.deleteRow(record.row);
-      logChange(request.email, STATUS.CANCELLED, currentFrequency || '');
+      logChange(
+        request.email,
+        'cancel',
+        previousStatus,
+        STATUS.CANCELLED,
+        previousFrequency,
+        ''
+      );
       notifySuccess(sender, 'Iscrizione cancellata definitivamente.');
       break;
     }
@@ -167,6 +190,14 @@ function handleMessage(message) {
       const normalizedRequested = request.newFrequency.toLowerCase();
 
       if (normalizedCurrent === normalizedRequested && currentFrequency !== '') {
+        logChange(
+          request.email,
+          'changeFrequency',
+          previousStatus,
+          previousStatus,
+          previousFrequency,
+          previousFrequency
+        );
         notifySuccess(
           sender,
           'La frequenza è già impostata su ' + request.newFrequency + '. Nessuna modifica necessaria.'
@@ -175,7 +206,14 @@ function handleMessage(message) {
       }
 
       sheet.getRange(record.row, 3).setValue(request.newFrequency);
-      logChange(request.email, record.status, request.newFrequency);
+      logChange(
+        request.email,
+        'changeFrequency',
+        previousStatus,
+        previousStatus,
+        previousFrequency,
+        request.newFrequency
+      );
       notifySuccess(sender, 'Frequenza aggiornata a ' + request.newFrequency + '.');
       break;
     }
@@ -299,8 +337,16 @@ function notifyError(recipient, message) {
 /**
  * Registra la modifica effettuata sul foglio di log.
  */
-function logChange(email, status, scheduling) {
+function logChange(email, action, oldStatus, newStatus, oldFrequency, newFrequency) {
   const sheet = getSheet(LOG_SHEET_ID, LOG_SHEET_NAME);
   const timestamp = new Date();
-  sheet.appendRow([timestamp, email, status, scheduling]);
+  sheet.appendRow([
+    timestamp,
+    email,
+    action,
+    oldStatus || '',
+    newStatus || '',
+    oldFrequency || '',
+    newFrequency || '',
+  ]);
 }
